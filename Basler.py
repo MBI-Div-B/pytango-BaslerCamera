@@ -7,7 +7,7 @@ from pypylon import pylon
 
 #-----------------------------
 
-class BaslerPro(Device):
+class Basler(Device):
     '''
     Basler
     This controls the connection to Basler Cameras. One can also see many of 
