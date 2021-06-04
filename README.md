@@ -1,5 +1,7 @@
 # pytango-BaslerCamera
 This tango device connects to Basler cameras by writing the serial number of it (serial_number as a device property) and returns the image of the camera. Written in python3.
+In order to be used one needs to install first pypylon (pip install pypylon). Maybe pylon needs to be installed as well (before installing pypylon) if this has not been done yet.
+
 The attributes of this class are:
 - image
 - friendly_name
