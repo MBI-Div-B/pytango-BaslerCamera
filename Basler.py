@@ -44,7 +44,7 @@ class Basler(Device):
     
     exposure = attribute(label='exposure (recommended 500)', dtype="float",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
     
     exposure_min = attribute(label='exposure min', dtype="float",
                access=AttrWriteType.READ)
@@ -54,7 +54,7 @@ class Basler(Device):
                
     gain = attribute(label='gain (recommended 300)', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
     
     gain_min = attribute(label='gain min', dtype="int",
                access=AttrWriteType.READ)
@@ -64,7 +64,7 @@ class Basler(Device):
                    
     width = attribute(label='width of the image', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
 
     width_min = attribute(label='width min', dtype="int",
                access=AttrWriteType.READ)
@@ -74,7 +74,7 @@ class Basler(Device):
     
     height = attribute(label='height of the image', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
     
     height_min = attribute(label='height min', dtype="int",
                access=AttrWriteType.READ)
@@ -84,15 +84,15 @@ class Basler(Device):
     
     offsetX = attribute(label='offset x axis', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
     
     offsetY = attribute(label='offset y axis', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
     
     format_pixel = attribute(label='pixel format', dtype="str",
                access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
     
     report_framerate =  attribute(label='max framerate', dtype="float",
                access=AttrWriteType.READ)
@@ -100,11 +100,11 @@ class Basler(Device):
     
     binning_horizontal = attribute(label='binning_horizontal', dtype="int",
            access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
     
     binning_vertical = attribute(label='binning_vertical', dtype="int",
            access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=True)
+                   hw_memorized=False)
     
     sensor_readout_mode = attribute(label='sensor readout mode', dtype="str",
            access=AttrWriteType.READ)
