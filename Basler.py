@@ -7,7 +7,7 @@ from pypylon import pylon
 
 #-----------------------------
 
-class BaslerPro(Device):
+class Basler(Device):
     '''
     Basler
     This controls the connection to Basler Cameras. One can also see many of 
@@ -409,7 +409,7 @@ class BaslerPro(Device):
     
     
 if __name__ == "__main__":
-    BaslerPro.run_server()
+    Basler.run_server()
     
     
     
