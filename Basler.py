@@ -1,27 +1,115 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
-import tango
-from tango import AttrWriteType, DevState, DispLevel, DevFloat
+from tango import AttrWriteType, DevState,  DevFloat
 from tango.server import Device, attribute, command, device_property
 from pypylon import pylon
 
 
-class Basler(Device):
+#-----------------------------
+
+class BaslerPro(Device):
     '''
     Basler
-    This controls the connection to Basler Cameras
+    This controls the connection to Basler Cameras. One can also see many of 
+    the properties form the camera as well as the image observed by it. 
+    Moreover, if the camera is configured for triggered image acquisition, 
+    you can trigger image captures at particular points in time (in timeoutt).
+    
+    There are two types of grab strategies: one by one (the images are
+    processed in the order of their arrival) or latest only (The images are processed 
+    in the order of their arrival but only the last received image is kept in 
+    the output queue.This strategy can be useful when the acquired images are 
+    only displayed on the screen. If the processor has been busy for a while 
+    and images could not be displayed automatically the latest image is 
+    displayed when processing time is available again.).
+                                                             
+    Sensor readout mode: normal (the readout time for each row of pixels 
+    remains unchanged), fast (the readout time for each row of pixels is 
+                              reduced, compared to normal readout. )
     '''
  
-    image = attribute(name='image', label='Basler image', max_dim_x=4096,
+    image = attribute( label='image', max_dim_x=4096,
                       max_dim_y=4096, dtype=((DevFloat,),), access=AttrWriteType.READ)
     
-    no_images = attribute(name='no_images', label='Number of images to grab', 
-                          dtype="int", access=AttrWriteType.READ_WRITE)
+    serial_number = device_property(dtype="str", default_value='23306615')
     
-    #S/N written on th e camera
-    serial_number = device_property(dtype="str")
+    friendly_name = attribute(label='friendly name', dtype="str",
+                   access=AttrWriteType.READ)
     
-    __no_of_images = 1
+    real_serial_number = attribute(label='serial number', dtype="str",
+                   access=AttrWriteType.READ)
+    
+    model_name = attribute(label='model name', dtype="str",
+                   access=AttrWriteType.READ)
+    
+    exposure = attribute(label='exposure (recommended 500)', dtype="float",
+                   access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+    
+    exposure_min = attribute(label='exposure min', dtype="float",
+               access=AttrWriteType.READ)
+               
+    exposure_max = attribute(label='exposure max', dtype="float",
+               access=AttrWriteType.READ)
+               
+    gain = attribute(label='gain (recommended 300)', dtype="int",
+                   access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+    
+    gain_min = attribute(label='gain min', dtype="int",
+               access=AttrWriteType.READ)
+               
+    gain_max = attribute(label='gain max', dtype="int",
+               access=AttrWriteType.READ)
+                   
+    width = attribute(label='width of the image', dtype="int",
+                   access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+
+    width_min = attribute(label='width min', dtype="int",
+               access=AttrWriteType.READ)
+               
+    width_max = attribute(label='width max', dtype="int",
+               access=AttrWriteType.READ)
+    
+    height = attribute(label='height of the image', dtype="int",
+                   access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+    
+    height_min = attribute(label='height min', dtype="int",
+               access=AttrWriteType.READ)
+               
+    height_max = attribute(label='height max', dtype="int",
+               access=AttrWriteType.READ)
+    
+    offsetX = attribute(label='offset x axis', dtype="int",
+                   access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+    
+    offsetY = attribute(label='offset y axis', dtype="int",
+                   access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+    
+    format_pixel = attribute(label='pixel format', dtype="str",
+               access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+    
+    report_framerate =  attribute(label='max framerate', dtype="float",
+               access=AttrWriteType.READ)
+
+    
+    binning_horizontal = attribute(label='binning_horizontal', dtype="int",
+           access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+    
+    binning_vertical = attribute(label='binning_vertical', dtype="int",
+           access=AttrWriteType.READ_WRITE, memorized=True,
+                   hw_memorized=False)
+    
+    sensor_readout_mode = attribute(label='sensor readout mode', dtype="str",
+           access=AttrWriteType.READ)
+    
+    timeoutt = 5000
 
     def init_device(self):
         # connect to camera
@@ -30,64 +118,298 @@ class Basler(Device):
 
         try:
             self.device = self.get_camera_device()
-    
-            # VERY IMPORTANT STEP! To use Basler PyPylon OpenCV viewer you have to call .Open() method on you camera
             if self.device is not None:
                 instance = pylon.TlFactory.GetInstance()
                 
                 self.camera = pylon.InstantCamera(instance.CreateDevice(self.device))
                 self.camera.Open()
-            
-            self.debug_stream('Init was done to camera with serial: {:s}'.format(self.device.GetSerialNumber()))
+            self.trigger_software = False
+            self.latestimage =True
+            print('Init was done to camera with serial: {:s}'.format(self.device.GetSerialNumber()))
             self.set_state(DevState.ON)
         except:
-            self.error_stream('Could not open camera')
+            print('Could not open camera')
             self.set_state(DevState.OFF)
  
          
 
     def get_camera_device(self):
-        self.debug_stream('get_camera_device')
+        print('we get camera device')
         for device in pylon.TlFactory.GetInstance().EnumerateDevices():
             if device.GetSerialNumber() == self.serial_number:
                 return device
-        
         return None
+    
+    
+    def read_real_serial_number(self):    
+        return self.device.GetSerialNumber()
+    
+    def read_model_name(self):
+        return self.camera.GetDeviceInfo().GetModelName()
+    
+    def read_friendly_name(self):
+        return self.camera.GetDeviceInfo().GetFriendlyName()
         
-    def read_image(self):
-        # Print the model name of the camera.
-        self.debug_stream("Using device ")#, self.camera.GetDeviceInfo().GetModelName())
-        self.camera.ExposureTimeRaw.SetValue(500)
-        self.camera.StartGrabbingMax(self.__no_of_images)
+    def read_exposure(self):
+        return self.camera.ExposureTimeAbs()
+    
+    def write_exposure(self, value):
+        # if value < self.camera.ExposureTimeAbs.Min:
+        #     print("exposure: The value you are trying to write is below the minimum allowed by the settings")
+        #     self.camera.ExposureTimeAbs.SetValue(self.camera.ExposureTimeAbs.Min)
+        # if value > self.camera.ExposureTimeAbs.Max:
+        #     print("exposure: The value you are trying to write is above the maximum allowed by the settings")
+        #     self.camera.ExposureTimeAbs.SetValue(self.camera.ExposureTimeAbs.Max)
+        # else:
+        self.camera.ExposureTimeAbs.SetValue(value)
+        
+    def read_exposure_min(self):
+        return self.camera.ExposureTimeAbs.Min
+    
+    def read_exposure_max(self):
+        return self.camera.ExposureTimeAbs.Max
+    
+    def read_gain(self):
+        self.ggain = self.camera.GainRaw()
+        return self.ggain
+    
+    def write_gain(self, value):
+        # if value < self.camera.GainRaw.Min:
+        #     print("gain: The value you are trying to write is below the minimum allowed by the settings")
+        #     self.camera.GainRaw.SetValue(self.camera.GainRaw.Min)
+        # if value > self.camera.GainRaw.Max:
+        #     print("gain: The value you are trying to write is above the maximum allowed by the settings")
+        #     self.camera.GainRaw.SetValue(self.camera.GainRaw.Max)
+        # else:
+        self.camera.GainRaw.SetValue(value)
+    
+    def read_width_min(self):
+        return self.camera.Width.Min
+    
+    def read_width_max(self):
+        return self.camera.Width.Max
+    
+    def read_height_min(self):
+        return self.camera.Height.Min
+    
+    def read_height_max(self):
+        return self.camera.Height.Max
+    
+    def read_gain_min(self):
+        return self.camera.GainRaw.Min
+    
+    def read_gain_max(self):
+        return self.camera.GainRaw.Max
+    
+    def read_format_pixel(self):
+        return self.camera.PixelFormat()
+    
+    def write_format_pixel(self,value):
+        if type(value) == str:
+            self.camera.PixelFormat = value
+        else:
+            self.camera.PixelFormat = self.camera.PixelFormat()
+    
+    def read_width(self):
+        return self.camera.Width()
+    
+    def write_width(self, value):
+        # if value < self.camera.Width.Min:
+        #     print("width: The value you are trying to write is below the minimum allowed by the settings")
+        #     self.camera.Width = self.camera.Width.Min
+        # if value >self.camera.Width.Max:
+        #     print("width: The value you are trying to write is above the maximum allowed by the settings")
+        #     self.camera.Width = self.camera.Width.Max
+        # else:
+        self.camera.Width = value
+        
+    def read_height(self):
+        return self.camera.Height()
+    
+    def write_height(self, value):
+        # if value < self.camera.Height.Min:
+        #     print("height: The value you are trying to write is below the minimum allowed by the settings")
+        #     self.camera.Height = self.camera.Height.Min
+        # if value > self.camera.Height.Max:
+        #     print("height: The value you are trying to write is above the maximum allowed by the settings")
+        #     self.camera.Height = self.camera.Height.Max
+        # else:
+        self.camera.Height = value
 
-        while self.camera.IsGrabbing():
-            self.grabResult = self.camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+    def read_offsetX(self):
+        return self.camera.OffsetX()
+    
+    def write_offsetX(self, value):
+        self.camera.OffsetX = value
+
+    def read_offsetY(self):
+        return self.camera.OffsetY()
+    
+    def write_offsetY(self, value):
+        self.camera.OffsetY = value
         
-            if self.grabResult.GrabSucceeded():
-                self.img = self.grabResult.Array
-        
-            self.grabResult.Release()
+    def read_report_framerate(self):
+        return self.camera.ResultingFrameRateAbs()
+    
+    def read_binning_horizontal(self):
+        return self.camera.BinningHorizontal()
+    
+    def write_binning_horizontal(self,value):
+        # if value < self.camera.BinningHorizontal.Min:
+        #     print("binning horizontal: The value you are trying to write is below the minimum allowed by the settings")
+        #     self.camera.BinningHorizontal = self.camera.BinningHorizontal.Min
+        # if value > self.camera.BinningHorizontal.Max:
+        #     print("binning horizontal: The value you are trying to write is above the maximum allowed by the settings")
+        #     self.camera.BinningHorizontal = self.camera.BinningHorizontal.Max
+        # else:
+        self.camera.BinningHorizontal = value
+    
+    def read_binning_vertical(self):
+        return self.camera.BinningVertical()
+    
+    def write_binning_vertical(self,value):
+        # if value < self.camera.BinningVertical.Min:
+        #     print("binning vertical: The value you are trying to write is below the minimum allowed by the settings")
+        #     self.camera.BinningVertical = self.camera.BinningVertical.Min
+        # if value > self.camera.BinningVertical.Max:
+        #     print("binning vertical: The value you are trying to write is above the maximum allowed by the settings")
+        #     self.camera.BinningVertical = self.camera.BinningVertical.Max
+        # else:
+        self.camera.BinningVertical = value
+    
+    def read_sensor_readout_mode(self):
+        return self.camera.SensorReadoutMode.GetValue()
+
+    def read_image(self):
+        self.debug_stream("trying to get the image")  
+        self.acquire_image()
+        self.debug_stream("acquired")
+        print("this is the real image", self.imagee)
+        return self.imagee
+    
+    def acquire_image(self):
+        self.trigger()
+        return self.wait(self.timeoutt)
+    
+    def trigger(self):
+        if self.trigger_software:
+            self.camera.TriggerSoftware()
+            print("the camera is successfully triggered")
+        else:
+            print('hardware trigger enabled')
+
+            
+    def wait(self,timeout):
+        if not self.grabbing:
+            self.start_grabbing()
+
+#maybe we could also set autoexposure        
+        if self.latestimage:
+            print("Wait in Grab LatestImageOnly strategy")
+            grabResult = self.camera.RetrieveResult(timeout, pylon.TimeoutHandling_Return)
+            if grabResult.IsValid(): 
+                self.debug_stream("we could grab result")
+                self.imagee = grabResult.Array
+                return True
+            else:
+                print("Could not grab result")
+                return False #print("could not grab latest")
                 
-        return self.img
-        
-    def read_no_images(self):
-        return self.__no_of_images
-        
-        
-    def write_no_images(self, value):
-        self.__no_of_images = value
+        else:
+            print("Wait in Grab OneByOne strategy")
+            grabResult = self.camera.RetrieveResult(timeout, pylon.TimeoutHandling_Return)
+            if grabResult.IsValid():  
+                self.imagee = grabResult.Array
+                self.debug_stream("here is the image")
+                return True
+            else:
+                return False
+
+    def start_grabbing(self):
+        if self.latestimage:
+            print("Grabbing LatestImageOnly")
+
+            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
+            
+            
+        else:
+            print("Grabbing OneByOne")
+            self.camera.StartGrabbing(pylon.GrabStrategy_OneByOne)
+
+    @command()    
+    def stop_grabbing(self):
+        print('Stopping Grabbing')
+        self.camera.StopGrabbing()
         
     def delete_device(self):
         try:
-            self.debug_stream('Close connection to camera with serial: {:s}'.format(self.device.GetSerialNumber()))
+            print('Close connection to camera with serial: {:s}'.format(self.device.GetSerialNumber()))
+            self.stop_grabbing()
             self.camera.Close()
         except:
-            return
-             
+            print('closing camera failed!')
+        
+    @property
+    def grabbing(self):
+        return self.camera.IsGrabbing()
+    
+    @command()
+    def TriggerMode(self):
+        print('Enabling hardware trigger') 
+        self.stop_grabbing()
+        self.camera.TriggerMode = 'On'
+#now the only possible type of triggering is software triggering
+        self.camera.TriggerSource = 'Software'
+        self.trigger_software = True
+        self.start_grabbing()  
+        pass
+
+#The trigger selected can be triggered by executing a TriggerSoftware command.
+        '''
+        https://docs.baslerweb.com/trigger-source#setting-a-software-trigger-source
+        
+        There are many different types of triggering (software and hardware for example)
+        What Tobias set was to be able to select Line1 and Software triggering but
+        now Line1 is not working:
+            
+        (set the triggersource to any of this values: Line1, Line2, Line3, 
+        Line4: If available, the trigger selected can be triggered by applying 
+        an electrical signal to I/O line 1, 2, 3, or 4.
+        '''
+
+    
+    @command()
+    def DisablingTriggerMode(self):
+        print("disabling trigger mode")
+        self.stop_grabbing()
+#Trigger signals are generated automatically by the camera.
+        self.camera.TriggerMode = 'Off'
+        self.trigger_software = False
+        self.start_grabbing()  
+        pass
+    
+    @command()
+    def SensorReadoutModeFast(self):
+        self.camera.SensorReadoutMode.SetValue(self.SensorReadoutMode_Fast)
+        
+    @command()
+    def LatestImageOnly(self):
+        print("Switching to grab mode Latest Image Only")
+        self.latestimage =True
+        pass
+    
+    @command()
+    def OneByOne(self):
+        print("Switching to grab mode One By One")
+        self.latestimage = False
+        pass
+    
+    
+
     
     
 if __name__ == "__main__":
-    Basler.run_server()
+    BaslerPro.run_server()
     
     
     
