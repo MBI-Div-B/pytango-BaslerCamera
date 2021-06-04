@@ -409,7 +409,7 @@ class Basler(Device):
     
     
 if __name__ == "__main__":
-    BaslerPro.run_server()
+    Basler.run_server()
     
     
     
