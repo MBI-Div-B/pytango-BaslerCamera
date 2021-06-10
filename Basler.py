@@ -341,6 +341,7 @@ class Basler(Device):
         print('Stopping Grabbing')
         self.camera.StopGrabbing()
         
+    @command()  
     def delete_device(self):
         try:
             print('Close connection to camera with serial: {:s}'.format(self.device.GetSerialNumber()))
