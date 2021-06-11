@@ -1,8 +1,9 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
-from tango import AttrWriteType, DevState,  DevFloat
+from tango import AttrWriteType, DevState,  DevFloat, EncodedAttribute
 from tango.server import Device, attribute, command, device_property
 from pypylon import pylon
+from numpy import array
 
 
 #-----------------------------
@@ -281,11 +282,13 @@ class Basler(Device):
         return self.camera.SensorReadoutMode.GetValue()
 
     def read_image(self):
+    #maybe without the parentesis
+        enc = EncodedAttribute()
         self.debug_stream("trying to get the image")  
         self.acquire_image()
         self.debug_stream("acquired")
-        print("this is the real image", self.imagee)
-        return self.imagee
+        encoded = enc.encode_jpeg_gray8(self.imagee)
+        return encoded #self.imagee
     
     def acquire_image(self):
         self.trigger()
@@ -309,7 +312,8 @@ class Basler(Device):
             grabResult = self.camera.RetrieveResult(timeout, pylon.TimeoutHandling_Return)
             if grabResult.IsValid(): 
                 self.debug_stream("we could grab result")
-                self.imagee = grabResult.Array
+                image = grabResult.Array
+                self.imagee = array(image)
                 return True
             else:
                 print("Could not grab result")
@@ -319,16 +323,17 @@ class Basler(Device):
             print("Wait in Grab OneByOne strategy")
             grabResult = self.camera.RetrieveResult(timeout, pylon.TimeoutHandling_Return)
             if grabResult.IsValid():  
-                self.imagee = grabResult.Array
+                image = grabResult.Array
+                self.imagee = array(image)
                 self.debug_stream("here is the image")
                 return True
             else:
                 return False
+    
 
     def start_grabbing(self):
         if self.latestimage:
             print("Grabbing LatestImageOnly")
-
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
             
             
