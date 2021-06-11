@@ -28,87 +28,92 @@ class Basler(Device):
     remains unchanged), fast (the readout time for each row of pixels is 
                               reduced, compared to normal readout. )
     '''
- 
+    polling = 5000
+    polling_infinite = 100000
     image = attribute( label='image', max_dim_x=4096,
-                      max_dim_y=4096, dtype=((DevFloat,),), access=AttrWriteType.READ)
+                      max_dim_y=4096, dtype=((DevFloat,),), access=AttrWriteType.READ 
+                      , polling_period = polling)
     
     serial_number = device_property(dtype="str", default_value='23306615')
     
+    # image_encoded = attribute(label='encnoded image',
+    #            access=AttrWriteType.READ)
+    
     friendly_name = attribute(label='friendly name', dtype="str",
-                   access=AttrWriteType.READ)
+                   access=AttrWriteType.READ, polling_period = polling_infinite)
     
     real_serial_number = attribute(label='serial number', dtype="str",
-                   access=AttrWriteType.READ)
+                   access=AttrWriteType.READ, polling_period = polling_infinite)
     
     model_name = attribute(label='model name', dtype="str",
-                   access=AttrWriteType.READ)
+                   access=AttrWriteType.READ, polling_period = polling_infinite)
     
     exposure = attribute(label='exposure (recommended 500)', dtype="float",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
     
     exposure_min = attribute(label='exposure min', dtype="float",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
                
     exposure_max = attribute(label='exposure max', dtype="float",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
                
     gain = attribute(label='gain (recommended 300)', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
     
     gain_min = attribute(label='gain min', dtype="int",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
                
     gain_max = attribute(label='gain max', dtype="int",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
                    
     width = attribute(label='width of the image', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
 
     width_min = attribute(label='width min', dtype="int",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
                
     width_max = attribute(label='width max', dtype="int",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
     
     height = attribute(label='height of the image', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
     
     height_min = attribute(label='height min', dtype="int",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
                
     height_max = attribute(label='height max', dtype="int",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
     
     offsetX = attribute(label='offset x axis', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
     
     offsetY = attribute(label='offset y axis', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
     
     format_pixel = attribute(label='pixel format', dtype="str",
                access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
     
     report_framerate =  attribute(label='max framerate', dtype="float",
-               access=AttrWriteType.READ)
+               access=AttrWriteType.READ, polling_period = polling_infinite)
 
     
     binning_horizontal = attribute(label='binning_horizontal', dtype="int",
            access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
     
     binning_vertical = attribute(label='binning_vertical', dtype="int",
            access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False)
+                   hw_memorized=False, polling_period = polling)
     
     sensor_readout_mode = attribute(label='sensor readout mode', dtype="str",
-           access=AttrWriteType.READ)
+           access=AttrWriteType.READ, polling_period = polling_infinite)
     
     timeoutt = 5000
 
@@ -146,6 +151,7 @@ class Basler(Device):
         return self.device.GetSerialNumber()
     
     def read_model_name(self):
+        print("polling now")
         return self.camera.GetDeviceInfo().GetModelName()
     
     def read_friendly_name(self):
@@ -282,13 +288,24 @@ class Basler(Device):
         return self.camera.SensorReadoutMode.GetValue()
 
     def read_image(self):
-    #maybe without the parentesis
-        enc = EncodedAttribute()
         self.debug_stream("trying to get the image")  
         self.acquire_image()
         self.debug_stream("acquired")
-        encoded = enc.encode_jpeg_gray8(self.imagee)
-        return encoded #self.imagee
+        self.imagee = array(self.imagee)
+        #print("this is image",type(self.imagee))
+        return self.imagee
+    
+    # def read_image_encoded(self):
+    # #maybe without the parentesis
+    #     print("until here it is fine")
+    #     self.acquire_image()
+    #     self.debug_stream("acquired")
+    #     self.imagee = array(self.imagee)
+    #     print("the image is about to be encoded")
+    #     encoded = EncodedAttribute().encode_gray8(self.imagee)
+    #     print("the image is encoded")
+    #     print(encoded)
+    #     return encoded #self.imagee
     
     def acquire_image(self):
         self.trigger()
@@ -312,8 +329,7 @@ class Basler(Device):
             grabResult = self.camera.RetrieveResult(timeout, pylon.TimeoutHandling_Return)
             if grabResult.IsValid(): 
                 self.debug_stream("we could grab result")
-                image = grabResult.Array
-                self.imagee = array(image)
+                self.imagee = grabResult.Array
                 return True
             else:
                 print("Could not grab result")
