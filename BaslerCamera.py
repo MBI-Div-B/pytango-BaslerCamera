@@ -8,7 +8,7 @@ from numpy import array
 
 #-----------------------------
 
-class Basler(Device):
+class BaslerCamera(Device):
     '''
     Basler
     This controls the connection to Basler Cameras. One can also see many of 
@@ -431,7 +431,7 @@ class Basler(Device):
     
     
 if __name__ == "__main__":
-    Basler.run_server()
+    BaslerCamera.run_server()
     
     
     
