@@ -28,13 +28,13 @@ class BaslerCamera(Device):
     remains unchanged), fast (the readout time for each row of pixels is 
                               reduced, compared to normal readout. )
     '''
-    polling = 5000
+    polling = 1000
     polling_infinite = 100000
     image = attribute( label='image', max_dim_x=4096,
                       max_dim_y=4096, dtype=((DevFloat,),), access=AttrWriteType.READ 
                       , polling_period = polling)
     
-    serial_number = device_property(dtype="str", default_value='23306615')
+    serial_number = device_property(dtype="str")
     
     # image_encoded = attribute(label='encnoded image',
     #            access=AttrWriteType.READ)
@@ -60,7 +60,7 @@ class BaslerCamera(Device):
                
     gain = attribute(label='gain (recommended 300)', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False, polling_period = polling)
+                   hw_memorized=False, polling_period = polling_infinite)
     
     gain_min = attribute(label='gain min', dtype="int",
                access=AttrWriteType.READ, polling_period = polling_infinite)
@@ -70,7 +70,7 @@ class BaslerCamera(Device):
                    
     width = attribute(label='width of the image', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False, polling_period = polling)
+                   hw_memorized=False, polling_period = polling_infinite)
 
     width_min = attribute(label='width min', dtype="int",
                access=AttrWriteType.READ, polling_period = polling_infinite)
@@ -80,7 +80,7 @@ class BaslerCamera(Device):
     
     height = attribute(label='height of the image', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False, polling_period = polling)
+                   hw_memorized=False, polling_period = polling_infinite)
     
     height_min = attribute(label='height min', dtype="int",
                access=AttrWriteType.READ, polling_period = polling_infinite)
@@ -90,18 +90,18 @@ class BaslerCamera(Device):
     
     offsetX = attribute(label='offset x axis', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False, polling_period = polling)
+                   hw_memorized=False, polling_period = polling_infinite)
     
     offsetY = attribute(label='offset y axis', dtype="int",
                    access=AttrWriteType.READ_WRITE, memorized=True,
-                   hw_memorized=False, polling_period = polling)
+                   hw_memorized=False, polling_period = polling_infinite)
     
     format_pixel = attribute(label='pixel format', dtype="str",
                access=AttrWriteType.READ_WRITE, memorized=True,
                    hw_memorized=False, polling_period = polling)
     
     report_framerate =  attribute(label='max framerate', dtype="float",
-               access=AttrWriteType.READ, polling_period = polling_infinite)
+               access=AttrWriteType.READ, polling_period = polling)
 
     
     binning_horizontal = attribute(label='binning_horizontal', dtype="int",
@@ -115,7 +115,7 @@ class BaslerCamera(Device):
     sensor_readout_mode = attribute(label='sensor readout mode', dtype="str",
            access=AttrWriteType.READ, polling_period = polling_infinite)
     
-    timeoutt = 5000
+    timeoutt = 1000
 
     def init_device(self):
         # connect to camera
@@ -129,12 +129,12 @@ class BaslerCamera(Device):
                 
                 self.camera = pylon.InstantCamera(instance.CreateDevice(self.device))
                 self.camera.Open()
-            self.trigger_software = False
+            self.trigger_software = True
             self.latestimage =True
             print('Init was done to camera with serial: {:s}'.format(self.device.GetSerialNumber()))
             self.set_state(DevState.ON)
         except:
-            print('Could not open camera')
+            print('Could not open camera with serial: {:s}'.format(self.serial_number))
             self.set_state(DevState.OFF)
  
          
